@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CheckinMe - Staff</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root { --primary-blue: #1a4a94; --primary-orange: #ff6600; --bg-gray: #f4f7f9; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-gray); margin: 0; padding: 0; display: flex; justify-content: center; }
+        .mobile-container { width: 100%; max-width: 400px; background: white; min-height: 100vh; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        
+        /* Header Style from your photo */
+        .header { background: white; padding: 20px; text-align: left; border-bottom: 2px solid var(--primary-orange); }
+        .header h1 { color: var(--primary-blue); margin: 0; font-size: 24px; }
+
+        .content { padding: 20px; }
+        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; border: 1px solid #eee; }
+        
+        /* Form Inputs */
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        
+        /* Buttons */
+        .btn-main { background: var(--primary-orange); color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .btn-scan { background: var(--primary-blue); margin-top: 10px; }
+
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; display: none; }
+        .hidden { display: none; }
+        .profile-info { text-align: center; color: var(--primary-blue); }
+    </style>
+</head>
+<body>
+
+<div class="mobile-container">
+    <div class="header">
+        <h1>CheckinMe</h1>
+    </div>
+
+    <div class="content">
+        <div id="setup-screen" class="card">
+            <h3>Create Staff Account</h3>
+            <input type="text" id="staff-name" placeholder="Full Name">
+            <select id="staff-sex">
+                <option value="">Select Sex</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+            <input type="text" id="staff-pos" placeholder="Position (e.g. Driver, Office)">
+            <button class="btn-main" onclick="saveAccount()">Create Account</button>
+        </div>
+
+        <div id="main-screen" class="hidden">
+            <div class="card profile-info">
+                <h2 id="display-name">Hello!</h2>
+                <p id="display-pos" style="color: #666;"></p>
+            </div>
+            
+            <button class="btn-main btn-scan" id="start-scan-btn" onclick="startScanner()">Open QR Scanner</button>
+            <div id="reader"></div>
+            <p id="status-msg" style="text-align:center; color: green; font-weight: bold;"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // CHANGE THIS: Paste your Google Web App URL here
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzs-sqaRbY_nwKKaKdZbbHPdjbjhLRQTTuIi3pTCanaHruAwJjJ-SqHTwHvX_-H1lTizg/exec";
+
+    // Load account on startup
+    window.onload = function() {
+        const savedName = localStorage.getItem("staffName");
+        if (savedName) {
+            showMainScreen(savedName, localStorage.getItem("staffPos"));
+        }
+    };
+
+    function saveAccount() {
+        const name = document.getElementById("staff-name").value;
+        const sex = document.getElementById("staff-sex").value;
+        const pos = document.getElementById("staff-pos").value;
+
+        if(!name || !sex || !pos) return alert("Please fill all info!");
+
+        localStorage.setItem("staffName", name);
+        localStorage.setItem("staffSex", sex);
+        localStorage.setItem("staffPos", pos);
+        showMainScreen(name, pos);
+    }
+
+    function showMainScreen(name, pos) {
+        document.getElementById("setup-screen").classList.add("hidden");
+        document.getElementById("main-screen").classList.remove("hidden");
+        document.getElementById("display-name").innerText = name;
+        document.getElementById("display-pos").innerText = pos;
+    }
+
+    function startScanner() {
+        document.getElementById("reader").style.display = "block";
+        document.getElementById("start-scan-btn").style.display = "none";
+
+        const html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+                if(decodedText === "MOVE24_OFFICE") {
+                    html5QrCode.stop();
+                    document.getElementById("reader").style.display = "none";
+                    sendAttendance();
+                }
+            }
+        ).catch(err => alert("Camera error: " + err));
+    }
+
+    function sendAttendance() {
+        document.getElementById("status-msg").innerText = "Sending to Telegram...";
+        
+        const data = {
+            name: localStorage.getItem("staffName"),
+            position: localStorage.getItem("staffPos")
+        };
+
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', // Apps Script requires this for simple POST
+            cache: 'no-cache',
+            body: JSON.stringify(data)
+        }).then(() => {
+            document.getElementById("status-msg").innerText = "Success! Attendance Recorded ✅";
+            document.getElementById("start-scan-btn").style.display = "block";
+        }).catch(err => {
+            alert("Error sending data.");
+            console.error(err);
+        });
+    }
+</script>
+
+</body>
+</html>
