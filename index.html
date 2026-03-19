@@ -3,38 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheckinMe - Staff</title>
+    <title>MOVE24 Staff Attendance</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary-blue: #1a4a94; --primary-orange: #ff6600; --bg-gray: #f4f7f9; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-gray); margin: 0; padding: 0; display: flex; justify-content: center; }
+        :root { --primary-blue: #1a4a94; --primary-orange: #ff6600; --bg-gray: #f4f7f9; --green: #28a745; --red: #dc3545; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-gray); margin: 0; display: flex; justify-content: center; }
         .mobile-container { width: 100%; max-width: 400px; background: white; min-height: 100vh; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        
-        /* Header Style from your photo */
-        .header { background: white; padding: 20px; text-align: left; border-bottom: 2px solid var(--primary-orange); }
-        .header h1 { color: var(--primary-blue); margin: 0; font-size: 24px; }
-
+        .header { background: white; padding: 20px; border-bottom: 2px solid var(--primary-orange); }
+        .header h1 { color: var(--primary-blue); margin: 0; font-size: 22px; }
         .content { padding: 20px; }
-        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; border: 1px solid #eee; }
-        
-        /* Form Inputs */
+        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; border: 1px solid #eee; text-align: center; }
         input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        
-        /* Buttons */
-        .btn-main { background: var(--primary-orange); color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
-        .btn-scan { background: var(--primary-blue); margin-top: 10px; }
-
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; display: none; }
+        .btn-main { color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .btn-scan { background: var(--primary-blue); margin-top: 15px; }
+        .status-container { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-in { background: var(--green); flex: 1; }
+        .btn-out { background: var(--red); flex: 1; opacity: 0.4; }
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; display: none; margin-top: 15px; }
         .hidden { display: none; }
-        .profile-info { text-align: center; color: var(--primary-blue); }
+        #current-action { font-weight: bold; margin-top: 15px; color: var(--green); font-size: 18px; }
     </style>
 </head>
 <body>
 
 <div class="mobile-container">
-    <div class="header">
-        <h1>CheckinMe</h1>
-    </div>
+    <div class="header"><h1>MOVE24 Attendance</h1></div>
 
     <div class="content">
         <div id="setup-screen" class="card">
@@ -45,46 +38,63 @@
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
             </select>
-            <input type="text" id="staff-pos" placeholder="Position (e.g. Driver, Office)">
-            <button class="btn-main" onclick="saveAccount()">Create Account</button>
+            <input type="text" id="staff-pos" placeholder="Position (e.g. Driver)">
+            <button class="btn-main" style="background: var(--primary-orange);" onclick="saveAccount()">Create Account</button>
         </div>
 
-       <div id="main-screen" class="hidden">
-    <div class="card profile-info">
-        <h2 id="display-name">Hello!</h2>
-        <p id="display-pos" style="color: #666;"></p>
-        
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button id="btn-in" class="btn-main" style="background: #28a745;" onclick="setStatus('Check-in')">Check-in</button>
-            <button id="btn-out" class="btn-main" style="background: #dc3545; opacity: 0.5;" onclick="setStatus('Check-out')">Check-out</button>
+        <div id="main-screen" class="hidden">
+            <div class="card">
+                <h2 id="display-name" style="margin-bottom:5px; color: var(--primary-blue);"></h2>
+                <p id="display-pos" style="margin:0; color: #666;"></p>
+                
+                <div class="status-container">
+                    <button id="btn-in" class="btn-in btn-main" onclick="setStatus('Check-in')">Check-in</button>
+                    <button id="btn-out" class="btn-out btn-main" onclick="setStatus('Check-out')">Check-out</button>
+                </div>
+                <p id="current-action">Current Mode: Check-in</p>
+            </div>
+            
+            <button class="btn-main btn-scan" id="start-scan-btn" onclick="startScanner()">Open QR Scanner</button>
+            <div id="reader"></div>
+            <p id="status-msg" style="text-align:center; margin-top:15px; font-weight: bold;"></p>
         </div>
-        <p id="current-action" style="font-weight: bold; margin-top: 10px; color: #28a745;">Ready to: Check-in</p>
     </div>
-    
-    <button class="btn-main btn-scan" id="start-scan-btn" onclick="startScanner()">Open QR Scanner</button>
-    <div id="reader"></div>
-    <p id="status-msg" style="text-align:center; color: green; font-weight: bold;"></p>
 </div>
 
 <script>
-    // CHANGE THIS: Paste your Google Web App URL here
+    // ⚠️ REPLACE THIS WITH YOUR NEW WEB APP URL FROM GOOGLE
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0FXSNJK7GdKnfBNh7SfHS7q0whARWsT7FqAhEKqhGnijUqaAiwr0BiUHCEPlu46_x/exec";
 
-    // Load account on startup
+    let currentStatus = "Check-in";
+
     window.onload = function() {
         const savedName = localStorage.getItem("staffName");
-        if (savedName) {
-            showMainScreen(savedName, localStorage.getItem("staffPos"));
-        }
+        if (savedName) showMainScreen(savedName, localStorage.getItem("staffPos"));
     };
+
+    function setStatus(status) {
+        currentStatus = status;
+        document.getElementById("current-action").innerText = "Current Mode: " + status;
+        const btnIn = document.getElementById("btn-in");
+        const btnOut = document.getElementById("btn-out");
+        const statusText = document.getElementById("current-action");
+
+        if(status === 'Check-in') {
+            btnIn.style.opacity = "1";
+            btnOut.style.opacity = "0.4";
+            statusText.style.color = "var(--green)";
+        } else {
+            btnIn.style.opacity = "0.4";
+            btnOut.style.opacity = "1";
+            statusText.style.color = "var(--red)";
+        }
+    }
 
     function saveAccount() {
         const name = document.getElementById("staff-name").value;
         const sex = document.getElementById("staff-sex").value;
         const pos = document.getElementById("staff-pos").value;
-
-        if(!name || !sex || !pos) return alert("Please fill all info!");
-
+        if(!name || !sex || !pos) return alert("Fill all info!");
         localStorage.setItem("staffName", name);
         localStorage.setItem("staffSex", sex);
         localStorage.setItem("staffPos", pos);
@@ -101,43 +111,36 @@
     function startScanner() {
         document.getElementById("reader").style.display = "block";
         document.getElementById("start-scan-btn").style.display = "none";
-
         const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-            { facingMode: "environment" }, 
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            (decodedText) => {
-                if(decodedText === "MOVE24_OFFICE") {
-                    html5QrCode.stop();
-                    document.getElementById("reader").style.display = "none";
-                    sendAttendance();
-                }
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
+            if(decodedText === "MOVE24_OFFICE") {
+                html5QrCode.stop();
+                document.getElementById("reader").style.display = "none";
+                sendAttendance();
             }
-        ).catch(err => alert("Camera error: " + err));
+        });
     }
 
     function sendAttendance() {
-        document.getElementById("status-msg").innerText = "Sending to Telegram...";
+        document.getElementById("status-msg").innerText = "Processing " + currentStatus + "...";
+        document.getElementById("status-msg").style.color = "orange";
         
         const data = {
             name: localStorage.getItem("staffName"),
-            position: localStorage.getItem("staffPos")
+            position: localStorage.getItem("staffPos"),
+            status: currentStatus
         };
 
         fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors', // Apps Script requires this for simple POST
-            cache: 'no-cache',
+            mode: 'no-cors',
             body: JSON.stringify(data)
         }).then(() => {
-            document.getElementById("status-msg").innerText = "Success! Attendance Recorded ✅";
+            document.getElementById("status-msg").innerText = "Success! " + currentStatus + " Recorded ✅";
+            document.getElementById("status-msg").style.color = "green";
             document.getElementById("start-scan-btn").style.display = "block";
-        }).catch(err => {
-            alert("Error sending data.");
-            console.error(err);
         });
     }
 </script>
-
 </body>
 </html>
