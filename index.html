@@ -49,17 +49,21 @@
             <button class="btn-main" onclick="saveAccount()">Create Account</button>
         </div>
 
-        <div id="main-screen" class="hidden">
-            <div class="card profile-info">
-                <h2 id="display-name">Hello!</h2>
-                <p id="display-pos" style="color: #666;"></p>
-            </div>
-            
-            <button class="btn-main btn-scan" id="start-scan-btn" onclick="startScanner()">Open QR Scanner</button>
-            <div id="reader"></div>
-            <p id="status-msg" style="text-align:center; color: green; font-weight: bold;"></p>
+       <div id="main-screen" class="hidden">
+    <div class="card profile-info">
+        <h2 id="display-name">Hello!</h2>
+        <p id="display-pos" style="color: #666;"></p>
+        
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button id="btn-in" class="btn-main" style="background: #28a745;" onclick="setStatus('Check-in')">Check-in</button>
+            <button id="btn-out" class="btn-main" style="background: #dc3545; opacity: 0.5;" onclick="setStatus('Check-out')">Check-out</button>
         </div>
+        <p id="current-action" style="font-weight: bold; margin-top: 10px; color: #28a745;">Ready to: Check-in</p>
     </div>
+    
+    <button class="btn-main btn-scan" id="start-scan-btn" onclick="startScanner()">Open QR Scanner</button>
+    <div id="reader"></div>
+    <p id="status-msg" style="text-align:center; color: green; font-weight: bold;"></p>
 </div>
 
 <script>
