@@ -176,7 +176,7 @@
         document.getElementById("scan-btn").style.display = "none";
         const scanner = new Html5Qrcode("reader");
         scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-            if(text === "MOVE24_OFFICE") {
+            if(text === "OFFICE_KDV_2026") {
                 scanner.stop();
                 document.getElementById("reader").style.display = "none";
                 sendFinalData();
