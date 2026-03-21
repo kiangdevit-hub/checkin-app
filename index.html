@@ -4,25 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KDV Attendance</title>
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5522/5522730.png">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #1a4a94; --accent: #ff6600; --bg: #f8f9fa; --green: #28a745; --red: #dc3545; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; }
-        .app-container { max-width: 400px; margin: 0 auto; background: white; min-height: 100vh; display: flex; flex-direction: column; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; -webkit-tap-highlight-color: transparent; }
+        .app-container { max-width: 400px; margin: 0 auto; background: white; min-height: 100vh; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        
         .header { padding: 15px; border-bottom: 2px solid var(--accent); display: flex; justify-content: space-between; align-items: center; background: white; position: sticky; top: 0; z-index: 100; }
-        .header h1 { color: var(--primary); margin: 0; font-size: 20px; }
+        .header h1 { color: var(--primary); margin: 0; font-size: 20px; font-weight: 800; }
+
         .content { padding: 20px; flex-grow: 1; }
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center; margin-bottom: 20px; }
-        .profile-pic { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 3px solid var(--primary); }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        .card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; border: 1px solid #eee; }
+        
+        .profile-pic { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 3px solid var(--primary); background: #eee; }
+        
+        input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 5px rgba(26,74,148,0.2); }
+
+        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; transition: 0.3s; }
         .btn-primary { background: var(--primary); color: white; }
-        .mode-selector { display: flex; gap: 10px; margin: 15px 0; }
-        .mode-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; opacity: 0.4; color: white; }
-        .mode-btn.active { opacity: 1; }
-        #reader { width: 100%; border-radius: 10px; display: none; margin-top: 15px; }
+        .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+        
+        .mode-selector { display: flex; gap: 12px; margin: 20px 0; }
+        .mode-btn { flex: 1; padding: 14px; border-radius: 10px; border: none; font-weight: bold; color: white; cursor: pointer; transition: 0.3s; opacity: 0.3; }
+        .mode-btn.active { opacity: 1; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+        #reader { width: 100%; border-radius: 15px; overflow: hidden; display: none; margin-top: 20px; border: 2px solid #ddd; }
         .hidden { display: none; }
-        .link-text { color: var(--primary); font-size: 14px; margin-top: 15px; cursor: pointer; display: block; }
+        .link-text { color: var(--primary); font-size: 14px; margin-top: 20px; cursor: pointer; display: block; text-decoration: underline; }
+        #status-msg { text-align: center; font-weight: bold; margin-top: 15px; min-height: 20px; }
     </style>
 </head>
 <body>
@@ -30,97 +41,102 @@
 <div class="app-container">
     <div class="header">
         <h1>KDV Attendance</h1>
-        <button id="nav-btn" class="hidden" onclick="logout()" style="background:none; border:none; font-size:20px;">🚪</button>
+        <button id="nav-btn" class="hidden" onclick="logout()" style="background:none; border:none; font-size:22px; cursor:pointer;">🚪</button>
     </div>
 
     <div class="content">
         <div id="login-screen" class="card">
-            <h3>Staff Login</h3>
+            <h3 style="margin-top:0;">Staff Login</h3>
             <input type="text" id="login-name" placeholder="Full Name">
             <input type="password" id="login-pass" placeholder="Password">
-            <button class="btn btn-primary" onclick="handleAuth('login')">Login</button>
-            <span class="link-text" onclick="toggleAuth('register')">New Staff? Create Account</span>
+            <button class="btn btn-primary" onclick="handleAuth('login')">Login to Account</button>
+            <span class="link-text" onclick="toggleView('register')">New Staff? Create Account</span>
         </div>
 
         <div id="register-screen" class="card hidden">
-            <h3>New Registration</h3>
+            <h3 style="margin-top:0;">Register Account</h3>
             <input type="text" id="reg-name" placeholder="Full Name">
             <input type="password" id="reg-pass" placeholder="Create Password">
-            <input type="text" id="reg-pos" placeholder="Position">
+            <input type="text" id="reg-pos" placeholder="Position (e.g. Driver)">
             <input type="text" id="reg-img" placeholder="Photo URL (Optional)">
             <button class="btn btn-primary" onclick="handleAuth('register')">Register & Login</button>
-            <span class="link-text" onclick="toggleAuth('login')">Back to Login</span>
+            <span class="link-text" onclick="toggleView('login')">Already have account? Login</span>
         </div>
 
         <div id="main-screen" class="hidden">
             <div class="card">
                 <img src="" id="display-pic" class="profile-pic">
-                <h2 id="display-name" style="margin: 0;"></h2>
-                <p id="display-pos" style="color: #666;"></p>
+                <h2 id="display-name" style="margin: 5px 0 0 0; color: var(--primary);"></h2>
+                <p id="display-pos" style="color: #666; margin: 0 0 10px 0;"></p>
                 
                 <div class="mode-selector">
-                    <button id="btn-in" class="mode-btn active" style="background: var(--green);" onclick="setMode('Check-in')">In</button>
-                    <button id="btn-out" class="mode-btn" style="background: var(--red);" onclick="setMode('Check-out')">Out</button>
+                    <button id="btn-in" class="mode-btn active" style="background: var(--green);" onclick="setMode('Check-in')">Check-In</button>
+                    <button id="btn-out" class="mode-btn" style="background: var(--red);" onclick="setMode('Check-out')">Check-Out</button>
                 </div>
                 
-                <button class="btn btn-primary" id="scan-btn" onclick="startScanner()">Open QR Scanner</button>
+                <button class="btn btn-primary" id="scan-btn" onclick="startScanner()">📷 Open QR Scanner</button>
                 <div id="reader"></div>
             </div>
-            <p id="status-msg" style="text-align:center; font-weight:bold;"></p>
+            <p id="status-msg"></p>
         </div>
     </div>
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "PASTE_YOUR_GOOGLE_URL_HERE";
+    // ⚠️ REPLACE THIS WITH YOUR DEPLOYED GOOGLE SCRIPT URL
+    const GOOGLE_SCRIPT_URL = "PASTE_YOUR_NEW_WEB_APP_URL_HERE";
+    
     let currentMode = "Check-in";
 
     window.onload = function() {
         if (localStorage.getItem("staffName")) showDashboard();
     };
 
-    function toggleAuth(type) {
-        document.getElementById('login-screen').classList.toggle('hidden', type === 'register');
-        document.getElementById('register-screen').classList.toggle('hidden', type === 'login');
+    function toggleView(view) {
+        document.getElementById('login-screen').classList.toggle('hidden', view === 'register');
+        document.getElementById('register-screen').classList.toggle('hidden', view === 'login');
     }
 
-async function handleAuth(action) {
-    const name = document.getElementById(action === 'login' ? 'login-name' : 'reg-name').value;
-    const pass = document.getElementById(action === 'login' ? 'login-pass' : 'reg-pass').value;
-    const pos = action === 'register' ? document.getElementById('reg-pos').value : '';
-    const img = action === 'register' ? document.getElementById('reg-img').value : '';
+    async function handleAuth(action) {
+        const name = document.getElementById(action === 'login' ? 'login-name' : 'reg-name').value.trim();
+        const pass = document.getElementById(action === 'login' ? 'login-pass' : 'reg-pass').value.trim();
+        const pos = action === 'register' ? document.getElementById('reg-pos').value : '';
+        const img = action === 'register' ? document.getElementById('reg-img').value : '';
 
-    if (!name || !pass) return alert("Please fill in all fields");
+        if (!name || !pass) return alert("Please fill all fields");
+        document.getElementById('status-msg').innerText = "Processing...";
 
-    document.getElementById('status-msg').innerText = "Verifying...";
-    
-    try {
-        // We use a temporary form-data approach to bypass some Google CORS issues
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action, name, password: pass, position: pos, img })
-        });
-        
-        const result = await response.json();
+        const payload = JSON.stringify({ action, name, password: pass, position: pos, img });
 
-        if (result.status === "success") {
-            // Save to phone memory
-            localStorage.setItem("staffName", result.name || name);
-            localStorage.setItem("staffPos", result.pos || pos);
-            localStorage.setItem("staffImg", result.img || img || "https://cdn-icons-png.flaticon.com/512/149/149071.png");
-            
-            showDashboard();
-            document.getElementById('status-msg').innerText = "Login Successful!";
+        if (action === "register") {
+            // Register uses no-cors to ensure data hits the sheet even if response is blocked
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: payload });
+            setTimeout(() => {
+                localStorage.setItem("staffName", name);
+                localStorage.setItem("staffPos", pos);
+                localStorage.setItem("staffImg", img || "https://cdn-icons-png.flaticon.com/512/149/149071.png");
+                location.reload();
+            }, 2000);
         } else {
-            alert("Error: " + (result.message || "Invalid name or password"));
-            document.getElementById('status-msg').innerText = "";
+            // Login needs to read data
+            try {
+                const resp = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload });
+                const result = await resp.json();
+                if (result.status === "success") {
+                    localStorage.setItem("staffName", result.name);
+                    localStorage.setItem("staffPos", result.pos);
+                    localStorage.setItem("staffImg", result.img);
+                    location.reload();
+                } else {
+                    alert("Invalid Name or Password");
+                    document.getElementById('status-msg').innerText = "";
+                }
+            } catch (e) {
+                alert("Login Error. If you haven't registered on this device, please Register first.");
+                document.getElementById('status-msg').innerText = "";
+            }
         }
-    } catch (e) {
-        // If Google blocks the direct JSON response, we use this fallback
-        alert("Login system is syncing. Please try one more time or check your internet.");
-        console.log(e);
     }
-}
 
     function showDashboard() {
         document.getElementById("login-screen").classList.add("hidden");
@@ -140,6 +156,7 @@ async function handleAuth(action) {
 
     function startScanner() {
         document.getElementById("reader").style.display = "block";
+        document.getElementById("scan-btn").style.display = "none";
         const scanner = new Html5Qrcode("reader");
         scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
             if(text === "MOVE24_OFFICE") {
@@ -151,18 +168,26 @@ async function handleAuth(action) {
     }
 
     function submitAttendance() {
-        document.getElementById("status-msg").innerText = "Recording...";
-        const data = { name: localStorage.getItem("staffName"), position: localStorage.getItem("staffPos"), status: currentMode };
-        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) })
-        .then(() => {
-            document.getElementById("status-msg").innerText = "Success! ✅";
-            setTimeout(() => document.getElementById("status-msg").innerText = "", 3000);
-        });
+        document.getElementById("status-msg").innerText = "Syncing...";
+        const data = { 
+            name: localStorage.getItem("staffName"), 
+            position: localStorage.getItem("staffPos"), 
+            status: currentMode 
+        };
+
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+
+        setTimeout(() => {
+            document.getElementById("status-msg").innerHTML = `<span style="color:var(--green)">${currentMode} Recorded! ✅</span>`;
+            document.getElementById("scan-btn").style.display = "block";
+        }, 1500);
     }
 
     function logout() {
-        localStorage.clear();
-        location.reload();
+        if(confirm("Log out? You will need your password to log in again.")) {
+            localStorage.clear();
+            location.reload();
+        }
     }
 </script>
 </body>
