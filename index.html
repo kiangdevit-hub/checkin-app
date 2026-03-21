@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-     <link rel="apple-touch-icon" href="https://i.postimg.cc/YSM5FSFf/IMG-2195.jpg">
+          <link rel="apple-touch-icon" href="https://i.postimg.cc/YSM5FSFf/IMG-2195.jpg">
 <link rel="icon" type="image/png" href="https://i.postimg.cc/YSM5FSFf/IMG-2195.jpg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KDV Attendance</title>
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/240/checked-user-male.png">
+    
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/YSM5FSFf/IMG-2195.jpg">
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/YSM5FSFf/IMG-2195.jpg">
+    
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #1a4a94; --accent: #ff6600; --bg: #f8f9fa; --green: #28a745; --red: #dc3545; }
@@ -26,8 +29,6 @@
         #reader { width: 100%; border-radius: 10px; display: none; margin-top: 15px; }
         .hidden { display: none; }
         .link-text { color: var(--primary); font-size: 14px; margin-top: 15px; cursor: pointer; display: block; }
-        
-        /* Reason Modal Styles */
         #reason-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px; text-align: center; }
     </style>
@@ -86,7 +87,9 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/library/d/1sMVIh0Op5RRdcQnwoRH0PCn5Gnvv6ZzNBKxX-uCyXAtDEEO82c19cRx9/12";
+    // ONLY CHANGE THIS URL BELOW
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/library/d/1sMVIh0Op5RRdcQnwoRH0PCn5Gnvv6ZzNBKxX-uCyXAtDEEO82c19cRx9/13";
+    
     let currentMode = "Check-in";
     let tempReason = "Good";
 
@@ -109,25 +112,23 @@
 
         const payload = JSON.stringify({ action, name, password: pass, position: pos, img });
 
-        if (action === "register") {
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: payload });
-            setTimeout(() => {
+        try {
+            const resp = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload });
+            const result = await resp.json();
+            
+            if (result.status === "success" || action === "register") {
+                localStorage.setItem("staffName", result.name || name);
+                localStorage.setItem("staffPos", result.pos || pos);
+                localStorage.setItem("staffImg", result.img || img || "https://cdn-icons-png.flaticon.com/512/149/149071.png");
+                location.reload();
+            } else { alert("Invalid Credentials"); }
+        } catch (e) {
+            if (action === "register") {
                 localStorage.setItem("staffName", name);
                 localStorage.setItem("staffPos", pos);
                 localStorage.setItem("staffImg", img || "https://cdn-icons-png.flaticon.com/512/149/149071.png");
                 location.reload();
-            }, 2000);
-        } else {
-            try {
-                const resp = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload });
-                const result = await resp.json();
-                if (result.status === "success") {
-                    localStorage.setItem("staffName", result.name);
-                    localStorage.setItem("staffPos", result.pos);
-                    localStorage.setItem("staffImg", result.img);
-                    location.reload();
-                } else { alert("Invalid Credentials"); }
-            } catch (e) { alert("Please Register first!"); }
+            } else { alert("Error: Use the correct Web App URL!"); }
         }
     }
 
@@ -183,30 +184,27 @@
         });
     }
 
-   function sendFinalData() {
-    document.getElementById("status-msg").innerText = "Syncing with Google...";
-    
-    const data = { 
-        name: localStorage.getItem("staffName"), 
-        position: localStorage.getItem("staffPos"), 
-        status: currentMode,
-        reason: tempReason || "Good"
-    };
+    function sendFinalData() {
+        document.getElementById("status-msg").innerText = "Syncing...";
+        const data = { 
+            name: localStorage.getItem("staffName"), 
+            position: localStorage.getItem("staffPos"), 
+            status: currentMode,
+            reason: tempReason || "Good"
+        };
 
-    // Replace the URL below with your NEW Deployment URL
-    const GOOGLE_SCRIPT_URL = "PASTE_YOUR_NEW_URL_HERE";
+        fetch(GOOGLE_SCRIPT_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            body: JSON.stringify(data) 
+        });
 
-    fetch(GOOGLE_SCRIPT_URL, { 
-        method: 'POST', 
-        mode: 'no-cors', // This allows the data to go through even if Google blocks the response
-        body: JSON.stringify(data) 
-    });
-
-    setTimeout(() => {
-        document.getElementById("status-msg").innerHTML = `<span style="color:var(--green)">Success! ✅</span>`;
-        document.getElementById("scan-btn").style.display = "block";
-    }, 1500);
-}
+        setTimeout(() => {
+            document.getElementById("status-msg").innerHTML = `<span style="color:var(--green)">Success! ✅</span>`;
+            document.getElementById("scan-btn").style.display = "block";
+            document.getElementById("late-reason").value = ""; 
+        }, 1500);
+    }
 
     function logout() { localStorage.clear(); location.reload(); }
 </script>
