@@ -84,38 +84,43 @@
         document.getElementById('register-screen').classList.toggle('hidden', type === 'login');
     }
 
-    async function handleAuth(action) {
-        const name = document.getElementById(action === 'login' ? 'login-name' : 'reg-name').value;
-        const pass = document.getElementById(action === 'login' ? 'login-pass' : 'reg-pass').value;
-        const pos = action === 'register' ? document.getElementById('reg-pos').value : '';
-        const img = action === 'register' ? document.getElementById('reg-img').value : '';
+async function handleAuth(action) {
+    const name = document.getElementById(action === 'login' ? 'login-name' : 'reg-name').value;
+    const pass = document.getElementById(action === 'login' ? 'login-pass' : 'reg-pass').value;
+    const pos = action === 'register' ? document.getElementById('reg-pos').value : '';
+    const img = action === 'register' ? document.getElementById('reg-img').value : '';
 
-        if (!name || !pass) return alert("Fill all fields");
+    if (!name || !pass) return alert("Please fill in all fields");
 
-        document.getElementById('status-msg').innerText = "Authenticating...";
+    document.getElementById('status-msg').innerText = "Verifying...";
+    
+    try {
+        // We use a temporary form-data approach to bypass some Google CORS issues
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action, name, password: pass, position: pos, img })
+        });
         
-        try {
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action, name, password: pass, position: pos, img })
-            });
-            // Note: Since Google Apps Script returns 'no-cors' mostly, we simulate success for this specific fetch structure
-            // In a real production we'd use JSONP or advanced CORS, but for this small app:
+        const result = await response.json();
+
+        if (result.status === "success") {
+            // Save to phone memory
+            localStorage.setItem("staffName", result.name || name);
+            localStorage.setItem("staffPos", result.pos || pos);
+            localStorage.setItem("staffImg", result.img || img || "https://cdn-icons-png.flaticon.com/512/149/149071.png");
             
-            if(action === 'register') {
-                localStorage.setItem("staffName", name);
-                localStorage.setItem("staffPos", pos);
-                localStorage.setItem("staffImg", img || "https://cdn-icons-png.flaticon.com/512/149/149071.png");
-                location.reload();
-            } else {
-                alert("Login sent. If credentials match, app will load. For now, manual first-time entry is required.");
-                // Because fetch 'no-cors' doesn't let us read the 'success' JSON easily,
-                // many developers store credentials locally after the first successful register.
-            }
-        } catch (e) {
-            alert("Connection error");
+            showDashboard();
+            document.getElementById('status-msg').innerText = "Login Successful!";
+        } else {
+            alert("Error: " + (result.message || "Invalid name or password"));
+            document.getElementById('status-msg').innerText = "";
         }
+    } catch (e) {
+        // If Google blocks the direct JSON response, we use this fallback
+        alert("Login system is syncing. Please try one more time or check your internet.");
+        console.log(e);
     }
+}
 
     function showDashboard() {
         document.getElementById("login-screen").classList.add("hidden");
