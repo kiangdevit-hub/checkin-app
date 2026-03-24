@@ -86,103 +86,56 @@
     </div>
 </div>
 
+// ... (Keep your existing HTML and CSS, just update the script section)
+
 <script>
-    // ONLY CHANGE THIS URL BELOW
+    // 1. UPDATE THIS URL with your NEW deployment URL
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyOv3hpRZRYlHn2-hWrG1b1kUmWkstoBdepS0QSUpPfrO1OP76TqvW2rzF26uHHVx2VZQ/exec";
     
     let currentMode = "Check-in";
     let tempReason = "Good";
 
-    window.onload = function() {
-        if (localStorage.getItem("staffName")) showDashboard();
-    };
-
-    function toggleAuth(type) {
-        document.getElementById('login-screen').classList.toggle('hidden', type === 'register');
-        document.getElementById('register-screen').classList.toggle('hidden', type === 'login');
-    }
-
-    async function handleAuth(action) {
-        const name = document.getElementById(action === 'login' ? 'login-name' : 'reg-name').value;
-        const pass = document.getElementById(action === 'login' ? 'login-pass' : 'reg-pass').value;
-        const pos = action === 'register' ? document.getElementById('reg-pos').value : '';
-        const img = action === 'register' ? document.getElementById('reg-img').value : '';
-
-        if (!name || !pass) return alert("Fill all fields");
-
-        const payload = JSON.stringify({ action, name, password: pass, position: pos, img });
-
-        try {
-            const resp = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: payload });
-            const result = await resp.json();
-            
-            if (result.status === "success" || action === "register") {
-                localStorage.setItem("staffName", result.name || name);
-                localStorage.setItem("staffPos", result.pos || pos);
-                localStorage.setItem("staffImg", result.img || img || "https://cdn-icons-png.flaticon.com/512/149/149071.png");
-                location.reload();
-            } else { alert("Invalid Credentials"); }
-        } catch (e) {
-            if (action === "register") {
-                localStorage.setItem("staffName", name);
-                localStorage.setItem("staffPos", pos);
-                localStorage.setItem("staffImg", img || "https://cdn-icons-png.flaticon.com/512/149/149071.png");
-                location.reload();
-            } else { alert("Error: Use the correct Web App URL!"); }
-        }
-    }
-
-    function showDashboard() {
-        document.getElementById("login-screen").classList.add("hidden");
-        document.getElementById("register-screen").classList.add("hidden");
-        document.getElementById("main-screen").classList.remove("hidden");
-        document.getElementById("nav-btn").classList.remove("hidden");
-        document.getElementById("display-name").innerText = localStorage.getItem("staffName");
-        document.getElementById("display-pos").innerText = localStorage.getItem("staffPos");
-        document.getElementById("display-pic").src = localStorage.getItem("staffImg");
-    }
-
-    function setMode(mode) {
-        currentMode = mode;
-        document.getElementById("btn-in").classList.toggle("active", mode === "Check-in");
-        document.getElementById("btn-out").classList.toggle("active", mode === "Check-out");
-    }
-
-    function checkTimeRules() {
-        const now = new Date();
-        const hour = now.getHours();
-        const isLate = (currentMode === "Check-in" && hour >= 8);
-        const isEarly = (currentMode === "Check-out" && hour < 16);
-
-        if (isLate || isEarly) {
-            document.getElementById("modal-title").innerText = isLate ? "⚠️ Late Check-in" : "⚠️ Early Check-out";
-            document.getElementById("reason-modal").style.display = "flex";
-        } else {
-            tempReason = "Good";
-            startScanner();
-        }
-    }
-
-    function confirmReason() {
-        const r = document.getElementById("late-reason").value;
-        if (!r) return alert("Please enter a reason");
-        tempReason = r;
-        document.getElementById("reason-modal").style.display = "none";
-        startScanner();
-    }
+    // ... (Keep handleAuth and showDashboard functions)
 
     function startScanner() {
         document.getElementById("reader").style.display = "block";
         document.getElementById("scan-btn").style.display = "none";
         const scanner = new Html5Qrcode("reader");
+        
         scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-            if(text === "OFFICE_KDV_2026") {
+            // THE NEW QR NAME CHECK
+            if(text === "KDV_ATTENDANCE") { 
+                // Feedback for user
+                if (navigator.vibrate) navigator.vibrate(200); 
+                
                 scanner.stop();
                 document.getElementById("reader").style.display = "none";
                 sendFinalData();
             }
         });
     }
+
+    function sendFinalData() {
+        document.getElementById("status-msg").innerText = "Syncing with Google...";
+        const data = { 
+            name: localStorage.getItem("staffName"), 
+            position: localStorage.getItem("staffPos"), 
+            status: currentMode,
+            reason: tempReason || "Good"
+        };
+
+        fetch(GOOGLE_SCRIPT_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            body: JSON.stringify(data) 
+        });
+
+        setTimeout(() => {
+            document.getElementById("status-msg").innerHTML = `<span style="color:var(--green)">Success! ✅</span>`;
+            document.getElementById("scan-btn").style.display = "block";
+        }, 1500);
+    }
+</script>
 
     function sendFinalData() {
         document.getElementById("status-msg").innerText = "Syncing...";
